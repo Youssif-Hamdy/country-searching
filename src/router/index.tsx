@@ -10,22 +10,36 @@ import ErrorHandler from "../components/errors/ErrorHandler";
 import HomePage from "../pages";
 import LoginPage from "../pages/Login";
 import RegisterPage from "../pages/Register";
-import TodosPage from "../pages/Todos";
+import DetailsPage from "../pages/DetailsPage";
+import { auth } from "../components/firebaseConfig"; 
+import { onAuthStateChanged } from "firebase/auth"; 
 
-const storageKey = "loggedInUser";
-const userDataString = localStorage.getItem(storageKey);
-const userData = userDataString ? JSON.parse(userDataString) : null;
+
+let userData: any = null;
+
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    
+    userData = {
+      uid: user.uid,
+      email: user.email,
+    };
+  } else {
+    
+    userData = null;
+  }
+});
 
 const router = createBrowserRouter(
   createRoutesFromElements(
     <>
-      {/* Root Layout */}
       <Route path="/" element={<RootLayout />} errorElement={<ErrorHandler />}>
         <Route
           index
           element={
             <ProtectedRoute
-              isAllowed={userData?.jwt}
+              isAllowed={!userData} 
               redirectPath="/login"
               data={userData}
             >
@@ -34,26 +48,14 @@ const router = createBrowserRouter(
           }
         />
         <Route
-          path="/profile"
+          path="/details"
           element={
             <ProtectedRoute
-              isAllowed={userData?.jwt}
+              isAllowed={!userData} 
               redirectPath="/login"
               data={userData}
             >
-              <h2>Profile page</h2>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/todos"
-          element={
-            <ProtectedRoute
-              isAllowed={userData?.jwt}
-              redirectPath="/login"
-              data={userData}
-            >
-              <TodosPage />
+              <DetailsPage />
             </ProtectedRoute>
           }
         />
@@ -61,7 +63,7 @@ const router = createBrowserRouter(
           path="login"
           element={
             <ProtectedRoute
-              isAllowed={!userData?.jwt}
+              isAllowed={!userData} 
               redirectPath="/"
               data={userData}
             >
@@ -73,8 +75,8 @@ const router = createBrowserRouter(
           path="register"
           element={
             <ProtectedRoute
-              isAllowed={!userData?.jwt}
-              redirectPath="/login"
+              isAllowed={!userData} 
+              redirectPath="/"
               data={userData}
             >
               <RegisterPage />
@@ -82,8 +84,6 @@ const router = createBrowserRouter(
           }
         />
       </Route>
-
-      {/* Page Not Found */}
       <Route path="*" element={<PageNotFound />} />
     </>
   )

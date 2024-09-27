@@ -6,17 +6,20 @@ import { useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { loginSchema } from "../validation";
-import axiosInstance from "../config/axios.config";
 import toast from "react-hot-toast";
-import { AxiosError } from "axios";
-import { IErrorResponse } from "../interfaces";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import Footer from "../components/Footer";
+import { auth } from "../components/firebaseConfig";
+import { useNavigate } from "react-router-dom"; 
 
 interface IFormInput {
   identifier: string;
   password: string;
 }
+
 const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate(); 
   const {
     register,
     handleSubmit,
@@ -26,38 +29,33 @@ const LoginPage = () => {
   });
 
   const onSubmit: SubmitHandler<IFormInput> = async (data) => {
-    console.log("DATA", data);
     setIsLoading(true);
 
     try {
-      //  * 2 - Fulfilled => SUCCESS => (OPTIONAL)
-      const { status, data: resData } = await axiosInstance.post(
-        "/auth/local",
-        data
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        data.identifier,
+        data.password
       );
-      console.log(data);
-      console.log(resData);
-      if (status === 200) {
-        toast.success("You will navigate to the home page after 2 seconds.", {
-          position: "bottom-center",
-          duration: 1500,
-          style: {
-            backgroundColor: "black",
-            color: "white",
-            width: "fit-content",
-          },
-        });
-        localStorage.setItem("loggedInUser", JSON.stringify(resData));
-        setTimeout(() => {
-          location.replace("/");
-        }, 2000);
-      }
-    } catch (error) {
-      //  * 3 - Rejected => FAILED => (OPTIONAL)
-      console.log(error);
-      const errorObj = error as AxiosError<IErrorResponse>;
-      // console.log(error);
-      toast.error(`${errorObj.response?.data.error.message}`, {
+      const user = userCredential.user;
+
+      localStorage.setItem("loggedInUser", JSON.stringify(user));
+
+      toast.success("Successfully logged in! You will be redirected to the home page...", {
+        position: "bottom-center",
+        duration: 1500,
+        style: {
+          backgroundColor: "black",
+          color: "white",
+          width: "fit-content",
+        },
+      });
+
+      setTimeout(() => {
+        navigate("/");
+      }, 2000);
+    } catch (error: any) {
+      toast.error(`${error.message}`, {
         position: "bottom-center",
         duration: 1500,
       });
@@ -66,7 +64,6 @@ const LoginPage = () => {
     }
   };
 
-  // Renders
   const renderLoginForm = LOGIN_FORM.map(
     ({ name, placeholder, type, validation }, idx) => {
       return (
@@ -81,18 +78,34 @@ const LoginPage = () => {
       );
     }
   );
-  return (
-    <div className="max-w-md mx-auto">
-      <h2 className="text-center mb-4 text-3xl font-semibold">
-        Login to get access!
-      </h2>
-      <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
-        {renderLoginForm}
 
-        <Button fullWidth isLoading={isLoading}>
-          Login
-        </Button>
-      </form>
+  return (
+    <div className="flex flex-col min-h-screen mt-4">
+      <div className="flex items-center justify-center mt-10 flex-grow">
+        <div className="bg-white shadow-lg rounded-lg flex flex-col sm:flex-row overflow-hidden max-w-4xl w-full mb-8">
+          <div className="w-full sm:w-1/2 p-4 sm:p-8">
+            <h2 className="text-center mb-4 text-3xl font-semibold">
+              Log in to gain access!
+            </h2>
+            <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+              {renderLoginForm}
+              <Button fullWidth isLoading={isLoading}>
+                {isLoading ? "Logging in..." : "Log In"}
+              </Button>
+            </form>
+          </div>
+          <div className="w-full sm:w-1/2">
+            <img
+              src="https://static.vecteezy.com/system/resources/previews/024/881/469/original/mix-icon-for-access-vector.jpg"
+              alt="Login Illustration"
+              className="object-cover h-full w-full"
+            />
+          </div>
+        </div>
+      </div>
+      <div className="mt-4">
+        <Footer />
+      </div>
     </div>
   );
 };
