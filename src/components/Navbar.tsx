@@ -20,7 +20,7 @@ const Navbar = () => {
   const handleHomeClick = (e) => {
     if (!userData) {
       e.preventDefault();  
-      alert("لYou can only go to the Home page after logging in!");
+      alert("You can only go to the Home page after logging in!");
       navigate("/login"); 
     }
   };
